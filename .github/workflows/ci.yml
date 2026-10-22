@@ -1,0 +1,25 @@
+name: SDK checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npx --yes npm@11.6.2 ci
+      - run: npm run check
+      - run: npm run test:packages
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

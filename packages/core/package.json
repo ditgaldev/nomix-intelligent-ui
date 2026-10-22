@@ -1,0 +1,12 @@
+{
+  "name": "@nomix/intelligent-ui-core",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "Framework-neutral catalog, validation and document contracts for Nomix Intelligent UI.",
+  "repository": { "type": "git", "url": "git+https://github.com/ditgaldev/nomix-intelligent-ui.git", "directory": "packages/core" },
+  "files": ["dist", "LICENSE", "THIRD_PARTY_NOTICES.md", "LICENSE-APACHE-2.0"],
+  "exports": {".": {"types": "./dist/index.d.ts", "import": "./dist/index.js"}},
+  "scripts": {"build": "tsup src/index.ts --format esm --dts --clean", "typecheck": "tsc --noEmit"},
+  "dependencies": {"@json-render/core": "0.21.1", "zod": "4.4.3"}
+}

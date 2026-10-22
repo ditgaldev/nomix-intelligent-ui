@@ -1,0 +1,51 @@
+.nomix-ui {
+  --background: #ffffff;
+  --foreground: #1d2925;
+  --card: #ffffff;
+  --card-foreground: #1d2925;
+  --popover: #ffffff;
+  --popover-foreground: #1d2925;
+  --primary: #176b52;
+  --primary-foreground: #ffffff;
+  --secondary: #edf3ef;
+  --secondary-foreground: #285341;
+  --muted: #f5f6f3;
+  --muted-foreground: #6e7b74;
+  --accent: #e8f2ec;
+  --accent-foreground: #20513d;
+  --destructive: #bd3434;
+  --destructive-foreground: #ffffff;
+  --border: #e1e7e1;
+  --input: #d7dfd9;
+  --ring: #27785c;
+  --radius: 0.75rem;
+  --font-sans: Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.55;
+  min-width: 0;
+  color-scheme: light;
+}
+.nomix-ui[data-theme="dark"] {
+  --background: #15201c;
+  --foreground: #e6eee8;
+  --card: #1b2822;
+  --card-foreground: #e6eee8;
+  --popover: #223129;
+  --popover-foreground: #e6eee8;
+  --primary: #83cfaa;
+  --primary-foreground: #132b20;
+  --secondary: #2b3c31;
+  --secondary-foreground: #d0e7d8;
+  --muted: #223027;
+  --muted-foreground: #a2b5a8;
+  --accent: #30483a;
+  --accent-foreground: #dbefe2;
+  --destructive: #f48383;
+  --destructive-foreground: #301717;
+  --border: #354a3c;
+  --input: #465d4c;
+  --ring: #83cfaa;
+  color-scheme: dark;
+}

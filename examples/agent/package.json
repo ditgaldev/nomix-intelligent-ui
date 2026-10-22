@@ -1,0 +1,8 @@
+{
+  "name": "@nomix/intelligent-ui-agent-example",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "typecheck": "tsc --noEmit" },
+  "dependencies": { "@nomix/intelligent-ui-core": "0.1.0", "zod": "4.4.3" }
+}

@@ -1,0 +1,49 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "./tokens.css";
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@source "../../react/src";
+@source "../../vue/src";
+@source "../../../node_modules/@json-render/shadcn/dist";
+@source "../../../examples/shared";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* Local reset only: importing the SDK must not reset the consuming page. */
+@layer base {
+  .nomix-ui, .nomix-ui *, .nomix-ui *::before, .nomix-ui *::after { box-sizing: border-box; border-style: solid; border-width: 0; border-color: var(--border); }
+  .nomix-ui h1, .nomix-ui h2, .nomix-ui h3, .nomix-ui h4, .nomix-ui p { margin: 0; }
+  .nomix-ui button, .nomix-ui input, .nomix-ui select { font: inherit; color: inherit; }
+  .nomix-ui button { cursor: pointer; background-color: transparent; }
+  .nomix-ui button:disabled { cursor: not-allowed; }
+  .nomix-ui table { border-collapse: collapse; text-indent: 0; }
+  .nomix-ui svg { vertical-align: middle; flex-shrink: 0; }
+  .nomix-ui [role="combobox"] { text-align: left; }
+}
+.nomix-ui-error { padding: 12px 14px; border: 1px solid var(--destructive); border-radius: var(--radius); color: var(--destructive); background: var(--background); margin-bottom: 12px; font-size: 13px; overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) { .nomix-ui *, .nomix-ui *::before, .nomix-ui *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }

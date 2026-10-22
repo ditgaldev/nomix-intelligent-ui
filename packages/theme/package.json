@@ -1,0 +1,12 @@
+{
+  "name": "@nomix/intelligent-ui-theme",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "Shared design tokens and compiled CSS for Nomix UI adapters.",
+  "repository": { "type": "git", "url": "git+https://github.com/ditgaldev/nomix-intelligent-ui.git", "directory": "packages/theme" },
+  "exports": { "./styles.css": "./dist/styles.css", "./tokens.css": "./src/tokens.css" },
+  "files": ["dist", "src/tokens.css", "LICENSE"],
+  "sideEffects": ["**/*.css"],
+  "scripts": { "build": "tailwindcss -i src/styles.css -o dist/styles.css --minify" }
+}

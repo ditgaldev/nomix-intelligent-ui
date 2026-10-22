@@ -1,0 +1,20 @@
+{
+  "name": "@nomix/intelligent-ui-playground",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "vite --host 127.0.0.1 --port 5188 --strictPort", "build": "vite build", "typecheck": "tsc --noEmit" },
+  "dependencies": {
+    "@json-render/core": "0.21.1",
+    "@json-render/react": "0.21.1",
+    "@json-render/vue": "0.21.1",
+    "@nomix/intelligent-ui-core": "0.1.0",
+    "@nomix/intelligent-ui-react": "0.1.0",
+    "@nomix/intelligent-ui-vue": "0.1.0",
+    "@nomix/intelligent-ui-theme": "0.1.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "vue": "3.5.44",
+    "zod": "4.4.3"
+  }
+}
