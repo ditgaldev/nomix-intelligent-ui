@@ -45,6 +45,29 @@ accepted only as the final append segment. Sparse arrays are rejected. A failed
 update batch leaves the original store unchanged. The native `removeState`
 action requires a literal nonnegative integer `index`.
 
+`createUIState({ initialState?, catalog? })` creates a host-owned session with an
+immutable handle containing `store`, `catalog`, `sessionId` and `updateHost`.
+Pass this handle to either framework's `IntelligentUI.state`. `initialState` on
+the component cannot accompany `state`; an explicit catalog must be the same
+reference as `state.catalog`. Replace the handle to start a new session.
+
+`state.updateHost({ '/data': nextData }, { sessionId, version })` accepts a batch
+of JSON Pointer/value entries. Trusted host updates bypass `allowedStatePaths`
+but retain all JSON, path and array guards. Ordinary `store.set/update` and UI
+actions remain restricted. Versions are nonnegative safe integers, strictly
+increasing per host session; UI writes do not advance them. Foreign sessions and
+old/repeated versions return `false`, invalid batches throw without advancing
+the version. This is result correlation, not authorization or request cancellation.
+Later Spec updates preserve the session; `spec.state` only seeds a new session,
+so data changes must be submitted explicitly rather than replaying defaults.
+
+`displayComponents` exports five optional presentation definitions: `LineChart`,
+`DataTable`, `MetricGroup`, `Timeline` and `Steps`. Extend the host catalog with
+these definitions and register the matching framework `/display` implementation.
+They are not in the default twelve. Display adapters revalidate resolved props;
+data preparation and business calculation remain in the host. See the shared
+schemas in `src/display.ts` and the repository integration guide.
+
 `createUIDocument(spec, { catalog, state })` stores `{ catalogVersion, spec,
 state }`. `serializeUIDocument` checks JSON safety; `parseUIDocument` additionally
 checks the exact version and revalidates the complete Spec. No implicit migration

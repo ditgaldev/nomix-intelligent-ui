@@ -5,21 +5,23 @@ import {
 import { JSONUIProvider, Renderer, type ComponentRegistry, type EventHandle, type StateStore } from '@json-render/vue';
 import {
   baseActions, catalog as defaultCatalog, cloneJSON, createUIStore, validateActionParams, validateUI,
-  type Spec, type UICatalog, type UIActionHandlers, type ComputedFunction,
+  type Spec, type UICatalog, type UIActionHandlers, type ComputedFunction, type UIState,
 } from '@nomix/intelligent-ui-core';
 import { registry as defaultRegistry } from './components';
 
 export interface IntelligentUIProps {
   spec: Spec;
-  /** Read only when mounting or when resetKey changes. Overrides spec.state. */
+  /** Internal session seed. Read on mounting/resetKey; cannot accompany state. */
   initialState?: Record<string, unknown>;
+  /** Shared state session. Replace the handle to deliberately start a new session. */
+  state?: UIState;
   actions?: UIActionHandlers;
   functions?: Record<string, ComputedFunction>;
   /** Native json-render Vue registry entries; supplied keys override defaults. */
   registry?: ComponentRegistry;
   catalog?: UICatalog;
   theme?: 'light' | 'dark';
-  /** Change deliberately to start a new state session from initialState/spec.state. */
+  /** Reset internal state from initialState/spec.state. External sessions require a new handle. */
   resetKey?: string | number;
   onStateChange?: (snapshot: Record<string, unknown>) => void;
   onError?: (error: Error) => void;
@@ -35,6 +37,7 @@ export const IntelligentUI = defineComponent({
   props: {
     spec: { type: Object as PropType<Spec>, required: true },
     initialState: { type: Object as PropType<Record<string, unknown>>, default: undefined },
+    state: { type: Object as PropType<UIState>, default: undefined },
     actions: { type: Object as PropType<UIActionHandlers>, default: undefined },
     functions: { type: Object as PropType<Record<string, ComputedFunction>>, default: undefined },
     registry: { type: Object as PropType<ComponentRegistry>, default: undefined },
@@ -47,14 +50,42 @@ export const IntelligentUI = defineComponent({
   setup(props, { attrs, expose }) {
     const container = ref<HTMLElement>();
     provide('nomix-ui:portal-target', () => container.value);
-    const selectedCatalog = computed(() => props.catalog ?? defaultCatalog);
+    interface AcceptedUI {
+      spec: Spec;
+      catalog: UICatalog;
+      registry: ComponentRegistry;
+      actions: UIActionHandlers;
+      functions: IntelligentUIProps['functions'];
+      store: StateStore;
+      state: UIState | undefined;
+      resetKey: IntelligentUIProps['resetKey'];
+    }
+    const accepted = shallowRef<AcceptedUI>();
+    const candidateError = shallowRef<Error>();
     const runtimeError = shallowRef<Error>();
     const actionError = shallowRef<Error>();
-    const renderRevision = ref(0);
+    const acceptedRevision = ref(0);
+    const storeRevision = ref(0);
     const sessionRevision = ref(0);
-    const validation = computed(() => {
+    const error = computed(() => candidateError.value ?? runtimeError.value ?? actionError.value);
+    const reportError = (caught: unknown) => { runtimeError.value = asError(caught); };
+    const reportActionError = (caught: unknown) => { actionError.value = asError(caught); };
+    watch(error, caught => { if (caught) props.onError?.(caught); }, { immediate: true });
+
+    let unsubscribe: (() => void) | undefined;
+    onBeforeUnmount(() => unsubscribe?.());
+    function acceptCandidate() {
       try {
-        const spec = validateUI(props.spec, { catalog: selectedCatalog.value });
+        const previous = accepted.value;
+        const state = props.state;
+        if (state && props.initialState !== undefined)
+          throw new Error('state and initialState cannot be supplied together');
+        if (state && props.catalog !== undefined && props.catalog !== state.catalog)
+          throw new Error('catalog must match state.catalog');
+        if (state && previous && previous.state === state && props.resetKey !== previous.resetKey)
+          throw new Error('Replace state to start a new session; resetKey cannot reset the same state handle');
+        const catalog = props.catalog ?? state?.catalog ?? defaultCatalog;
+        const spec = validateUI(props.spec, { catalog });
         const available = { ...defaultRegistry, ...props.registry };
         for (const element of Object.values(spec.elements)) {
           if (!available[element.type]) throw new Error(`No Vue implementation registered for component: ${element.type}`);
@@ -63,106 +94,125 @@ export const IntelligentUI = defineComponent({
               throw new Error(`No handler registered for action: ${binding.action}`);
           }
         }
-        return { spec, error: undefined };
+        const newSession = !previous || previous.state !== state || (!state && (
+          previous.resetKey !== props.resetKey || previous.catalog !== catalog
+        ));
+        // Only construct/subscribe a store after the entire candidate passes.
+        // New documents seed a session once; subsequent spec.state is metadata.
+        const store = state?.store ?? (newSession
+          ? createUIStore(previous && previous.catalog !== catalog && previous.resetKey === props.resetKey && !previous.state
+            ? previous.store.getSnapshot() : props.initialState ?? spec.state ?? {}, { catalog })
+          : previous!.store);
+        const next: AcceptedUI = {
+          spec, catalog, registry: available, actions: { ...props.actions }, functions: props.functions,
+          store, state, resetKey: props.resetKey,
+        };
+        if (newSession) {
+          unsubscribe?.();
+          sessionRevision.value++;
+          unsubscribe = store.subscribe(() => {
+            storeRevision.value++;
+            props.onStateChange?.(cloneJSON(store.getSnapshot()));
+          });
+        }
+        accepted.value = next;
+        candidateError.value = undefined;
+        runtimeError.value = undefined;
+        actionError.value = undefined;
+        acceptedRevision.value++;
       }
-      catch (error) { return { spec: undefined, error: asError(error) }; }
-    });
-    const fatalError = computed(() => validation.value.error ?? runtimeError.value);
-    const error = computed(() => fatalError.value ?? actionError.value);
-    const reportError = (caught: unknown) => { runtimeError.value = asError(caught); };
-    const reportActionError = (caught: unknown) => { actionError.value = asError(caught); };
-    watch(error, caught => { if (caught) props.onError?.(caught); }, { immediate: true });
-
-    // This is the official store with the core's JSON/path guards. The adapter
-    // subscribes only to translate the native store event into a full snapshot.
-    function newStore(seed: Record<string, unknown>): StateStore {
-      try { return createUIStore(seed, { catalog: selectedCatalog.value }); }
-      catch (caught) { reportError(caught); return createUIStore({}, { catalog: selectedCatalog.value }); }
+      catch (caught) { candidateError.value = asError(caught); }
     }
-    function seed() { return props.initialState ?? validation.value.spec?.state ?? {}; }
-    const store = shallowRef<StateStore>(newStore(seed()));
-    let unsubscribe = store.value.subscribe(() => props.onStateChange?.(cloneJSON(store.value.getSnapshot())));
-    function replaceStore(next: Record<string, unknown>) {
-      unsubscribe();
-      store.value = newStore(next);
-      unsubscribe = store.value.subscribe(() => props.onStateChange?.(cloneJSON(store.value.getSnapshot())));
-      sessionRevision.value++;
-    }
-    onBeforeUnmount(() => unsubscribe());
-    watch(() => props.resetKey, () => { runtimeError.value = undefined; actionError.value = undefined; replaceStore(seed()); }, { flush: 'sync' });
-    watch(() => props.catalog, () => replaceStore(store.value.getSnapshot()), { flush: 'sync' });
-    watch([() => props.spec, () => props.catalog, () => props.registry], () => {
-      runtimeError.value = undefined;
-      actionError.value = undefined;
-      // Upstream ElementErrorBoundary latches its error. Remount only the
-      // renderer on a new document, preserving the independently owned store.
-      renderRevision.value++;
-    }, { flush: 'sync' });
-    expose({ getState: () => cloneJSON(store.value.getSnapshot()) });
+    // Vue batches a host's simultaneous prop changes before validating them.
+    watch([
+      () => props.spec, () => props.catalog, () => props.registry, () => props.actions,
+      () => props.functions, () => props.state, () => props.initialState, () => props.resetKey,
+    ], acceptCandidate, { immediate: true });
+    expose({ getState: () => cloneJSON(accepted.value?.store.getSnapshot() ?? {}) });
 
     const handlers = computed(() => {
       // A native event can await one action before looking up its next handler.
       // Capture this provider's session when building the handler map, so later
       // actions from an old event cannot acquire a replacement store/catalog.
-      const actionStore = store.value;
-      const actionCatalog = selectedCatalog.value;
-      return Object.fromEntries(Object.entries(props.actions ?? {}).map(([name, handler]) => [name,
+      const actionStore = accepted.value?.store;
+      const actionCatalog = accepted.value?.catalog;
+      const actionSession = sessionRevision.value;
+      return Object.fromEntries(Object.entries(accepted.value?.actions ?? {}).map(([name, handler]) => [name,
         async (params: Record<string, unknown>) => {
-          if (actionStore === store.value) actionError.value = undefined;
+          if (actionSession === sessionRevision.value) actionError.value = undefined;
           try {
             const parsed = validateActionParams(name, params ?? {}, { catalog: actionCatalog });
             await handler(parsed, {
-              getState: () => cloneJSON(actionStore.getSnapshot()),
-              setState: (path, value) => actionStore.set(path, value),
+              getState: () => cloneJSON(actionStore!.getSnapshot()),
+              setState: (path, value) => actionStore!.set(path, value),
             });
-          } catch (caught) { if (actionStore === store.value) reportActionError(caught); throw caught; }
+          } catch (caught) { if (actionSession === sessionRevision.value) reportActionError(caught); throw caught; }
         },
       ]));
     });
 
-    const guardedRegistry = computed<ComponentRegistry>(() => Object.fromEntries(
-      Object.entries({ ...defaultRegistry, ...props.registry }).map(([name, component]) => [name,
-        defineComponent({
-          name: `NomixGuard_${name}`,
-          inheritAttrs: false,
-          setup(_, { attrs: entryAttrs, slots }) {
-            const componentSession = sessionRevision.value;
-            // Capture below upstream's silent ElementErrorBoundary so render
-            // failures can also reach the consuming application's error UI.
-            onErrorCaptured(caught => { if (componentSession === sessionRevision.value) reportError(caught); return false; });
-            return () => {
-              // The native renderer's emitEvent returns a promise, while its
-              // on().emit discards it. Catch at this adapter seam so rejected
-              // host/built-in actions report an error without an unhandled
-              // rejection; execution still belongs to the native runtime.
-              const emit = (event: string) => {
-                const eventSession = componentSession;
-                if (eventSession === sessionRevision.value) actionError.value = undefined;
-                const reject = (caught: unknown) => { if (eventSession === sessionRevision.value) reportActionError(caught); };
-                try {
-                  const result = (entryAttrs.emit as (name: string) => unknown)(event);
-                  void Promise.resolve(result).catch(reject);
-                } catch (caught) { reject(caught); }
-              };
-              const on = (event: string): EventHandle => ({
-                ...(entryAttrs.on as (name: string) => EventHandle)(event), emit: () => emit(event),
-              });
-              return h(component, { ...entryAttrs, emit, on }, slots);
+    // Registry objects are commonly recreated by hosts. Cache by the actual
+    // component so unchanged entries retain their Vue instance and local state.
+    const guards = new Map<ComponentRegistry[string], ComponentRegistry[string]>();
+    function guard(name: string, component: ComponentRegistry[string]) {
+      const existing = guards.get(component);
+      if (existing) return existing;
+      const guarded = defineComponent({
+        name: `NomixGuard_${name}`,
+        inheritAttrs: false,
+        setup(_, { attrs: entryAttrs, slots }) {
+          const componentSession = sessionRevision.value;
+          const localError = shallowRef<Error>();
+          // Dynamic props can become valid through a store update without a
+          // new Spec. Retry only failed subtrees, keeping healthy instances.
+          watch([acceptedRevision, storeRevision], () => {
+            if (componentSession !== sessionRevision.value) return;
+            if (localError.value && runtimeError.value === localError.value) runtimeError.value = undefined;
+            localError.value = undefined;
+          });
+          // Capture below upstream's non-resettable ElementErrorBoundary. Only
+          // the failed component's subtree is replaced while siblings stay put.
+          onErrorCaptured(caught => {
+            localError.value = asError(caught);
+            if (componentSession === sessionRevision.value) reportError(caught);
+            return false;
+          });
+          return () => {
+            if (localError.value) return h('div', { class: 'nomix-ui-component-error' }, localError.value.message);
+            const emit = (event: string) => {
+              if (componentSession === sessionRevision.value) actionError.value = undefined;
+              const reject = (caught: unknown) => { if (componentSession === sessionRevision.value) reportActionError(caught); };
+              try {
+                const result = (entryAttrs.emit as (name: string) => unknown)(event);
+                // Observe rejections and preserve the native result so custom
+                // components can await the same action chain.
+                void Promise.resolve(result).catch(reject);
+                return result;
+              } catch (caught) { reject(caught); throw caught; }
             };
-          },
-        }),
-      ]),
+            const on = (event: string): EventHandle => ({
+              ...(entryAttrs.on as (name: string) => EventHandle)(event), emit: () => emit(event),
+            });
+            return h(component, { ...entryAttrs, emit, on }, slots);
+          };
+        },
+      });
+      guards.set(component, guarded);
+      return guarded;
+    }
+    const guardedRegistry = computed<ComponentRegistry>(() => Object.fromEntries(
+      Object.entries(accepted.value?.registry ?? {}).map(([name, component]) => [name, guard(name, component)]),
     ));
 
     return () => h('div', {
       ...attrs, ref: container, class: ['nomix-ui', attrs.class, props.theme === 'dark' && 'dark'], 'data-theme': props.theme,
     }, [
       error.value ? h('div', { role: 'alert', class: 'nomix-ui-error rounded-md border border-destructive/50 bg-background p-4 text-sm text-destructive' }, error.value.message) : null,
-      !fatalError.value && validation.value.spec ? h(JSONUIProvider, {
-          key: sessionRevision.value, store: store.value, registry: guardedRegistry.value, handlers: handlers.value,
-          functions: props.functions,
+      accepted.value ? h(JSONUIProvider, {
+          key: sessionRevision.value, store: accepted.value.store, registry: guardedRegistry.value, handlers: handlers.value,
+          functions: accepted.value.functions,
         }, { default: () => h(Renderer, {
-          key: renderRevision.value, spec: validation.value.spec!, registry: guardedRegistry.value,
+          spec: accepted.value!.spec, registry: guardedRegistry.value,
         }) }) : null,
     ]);
   },

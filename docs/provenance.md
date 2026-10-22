@@ -7,8 +7,11 @@
 | [json-render v0.21.1](https://github.com/vercel-labs/json-render/tree/v0.21.1) | Core/React/Vue 作为 npm 依赖；12 个 shadcn 属性定义、原生 schema 与 React 表单接线局部复用 | Apache-2.0；各包 THIRD_PARTY_NOTICES 与 LICENSE-APACHE-2.0 |
 | [shadcn-vue 指定修订](https://github.com/unovue/shadcn-vue/tree/de1f76cbb4b319ea26b0dea175dc00c18fce3bd0/apps/v4/registry/new-york-v4/ui) | 选择基础控件，调整 utility 导入与 Select portal | MIT；`packages/vue/licenses/shadcn-vue-MIT.txt` |
 | [官方 vite-renderers 示例](https://github.com/vercel-labs/json-render/tree/v0.21.1/examples/vite-renderers) | 共享目录、独立 registry 与 Vite 双框架组织参考 | 架构参考，宿主示例在本仓库实现 |
+| [Chart.js v4.5.1](https://github.com/chartjs/Chart.js/tree/v4.5.1) | React/Vue 可选 `/display` 入口的折线图作为 npm 依赖复用 Chart.js 引擎；不复制引擎源码 | [MIT](https://github.com/chartjs/Chart.js/blob/v4.5.1/LICENSE.md)，Chart.js Contributors；记录于两端 THIRD_PARTY_NOTICES |
 
 详见 [React notices](../packages/react/THIRD_PARTY_NOTICES.md)、[Vue notices](../packages/vue/THIRD_PARTY_NOTICES.md) 和 [Core notices](../packages/core/THIRD_PARTY_NOTICES.md)。
+
+`createUIState` 在官方 json-render store 上增加 JSON/path 写入保护和宿主提交版本检查，未替换官方状态运行时。`displayComponents` 的展示数据契约、双端展示适配及局部错误恢复由本项目维护；折线绘制委托 Chart.js。公开行为参考 [json-render Vue API](https://json-render.dev/docs/api/vue) 和 [Chart.js line chart](https://www.chartjs.org/docs/latest/charts/line.html)。
 
 Volver、Nuxt UI、Vizual 等项目用于比较组件覆盖、主题与业务块设计；本初始版本没有复制其代码，也没有引入其旧 runtime。
 

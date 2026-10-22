@@ -16,18 +16,22 @@ npm run dev
 
 打开 [接入工作台](http://127.0.0.1:5188)，示例 API 位于 `127.0.0.1:5189`。工作台同时展示 React/Vue，包含自由组合、固定销售摘要、受约束插槽、明暗主题、月份查询、独立状态、保存恢复和 JSONL 流接收。
 
+[连续更新示例](http://127.0.0.1:5188/updates) 展示业务无关的宿主数据更新、Spec 替换、会话切换与错误恢复。普通 Spec 更新保留相同组件的状态和焦点；外部数据通过 `createUIState().updateHost()` 提交，后续 `spec.state` 不自动覆盖用户输入。
+
 示例使用明确标识的模拟数据，默认不调用模型。`examples/agent/src/service.ts` 提供 `generateCandidate` 注入点，可连接宿主 Agent。
 
 ## 包与职责
 
 | 包 | 使用位置 | 职责 |
 | --- | --- | --- |
-| `@nomix/intelligent-ui-core` | Agent 后端与前端 | 共享目录、Spec 校验、插槽约束、状态写入保护、文档保存恢复 |
+| `@nomix/intelligent-ui-core` | Agent 后端与前端 | 共享目录、Spec 校验、插槽约束、状态会话与写入保护、可选展示定义、文档保存恢复 |
 | `@nomix/intelligent-ui-theme` | 前端 | 编译 CSS、明暗主题和可覆盖的语义 tokens |
 | `@nomix/intelligent-ui-react` | React 19.2.3+ | 官方 React runtime、shadcn 组件与接入边界 |
 | `@nomix/intelligent-ui-vue` | Vue 3.5+ | 官方 Vue runtime、shadcn-vue 控件与共享目录适配 |
 
 首批 12 个基础组件：`Stack`、`Grid`、`Card`、`Heading`、`Text`、`Badge`、`Separator`、`Button`、`Input`、`Select`、`Checkbox`、`Table`。业务组件通过目录与各框架 registry 扩展，示例提供 `SalesSummary` 和 `ReportPanel`。
+
+另有 5 个按需注册的纯展示组件：`LineChart`、`DataTable`、`MetricGroup`、`Timeline`、`Steps`。共享定义 `displayComponents` 从 core 导入，框架实现 `displayRegistry` 从 `@nomix/intelligent-ui-react/display` 或 `@nomix/intelligent-ui-vue/display` 导入；适配器根入口不导出它们。数据计算、排序与业务执行仍由宿主负责，详见[展示组件接入](docs/integration.md#可选展示组件)。
 
 ```text
 宿主 Agent：业务工具与模型 → 候选 Spec → core 校验 → HTTP 文档/JSONL

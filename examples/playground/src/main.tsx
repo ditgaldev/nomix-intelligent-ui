@@ -9,6 +9,7 @@ import '@nomix/intelligent-ui-theme/styles.css';
 import { createDemoSpec, demoCatalog, salesSchema, type DemoMode } from '../../shared/demo';
 import { reactRegistry, vueRegistry } from './registries';
 import { VueBridge } from './VueBridge';
+import { UpdatesDemo } from './updates-demo';
 import './styles.css';
 
 const modes: { id: DemoMode; title: string; description: string; number: string }[] = [
@@ -156,9 +157,9 @@ function App() {
       {error && <div className="global-error" role="alert">{error}<button onClick={() => setError('')} aria-label="关闭错误">×</button></div>}
       <div className="comparison" aria-busy={busy}><Instance key={`react:${revision}`} framework="React" document={document} revision={revision} theme={theme} /><Instance key={`vue:${revision}`} framework="Vue" document={document} revision={revision} theme={theme} /></div>
       {showSpec && <section className="spec-panel"><div><h2>当前 Spec</h2><button onClick={validateInvalid}>测试非法 Spec 拦截</button></div><pre>{JSON.stringify(document, null, 2)}</pre></section>}
-      <footer className="page-footer"><span>每个实例拥有独立状态，可分别切换月份、编辑备注、保存和恢复。</span><span>Powered by json-render</span></footer>
+      <footer className="page-footer"><span>每个实例拥有独立状态，可分别切换月份、编辑备注、保存和恢复。</span><a href="/updates">连续更新与通用组件演示 ↗</a><span>Powered by json-render</span></footer>
     </main>
   </div>;
 }
 
-createRoot(document.getElementById('root')!).render(<App />);
+createRoot(document.getElementById('root')!).render(location.pathname === '/updates' ? <UpdatesDemo /> : <App />);

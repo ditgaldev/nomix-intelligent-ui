@@ -7,6 +7,8 @@ export default defineConfig({
   plugins: [react(), vue()],
   resolve: { alias: {
     '@nomix/intelligent-ui-core': fileURLToPath(new URL('./packages/core/src/index.ts', import.meta.url)),
+    '@nomix/intelligent-ui-react/display': fileURLToPath(new URL('./packages/react/src/display.tsx', import.meta.url)),
+    '@nomix/intelligent-ui-vue/display': fileURLToPath(new URL('./packages/vue/src/display.ts', import.meta.url)),
     '@nomix/intelligent-ui-react': fileURLToPath(new URL('./packages/react/src/index.tsx', import.meta.url)),
     '@nomix/intelligent-ui-vue': fileURLToPath(new URL('./packages/vue/src/index.ts', import.meta.url)),
   } },

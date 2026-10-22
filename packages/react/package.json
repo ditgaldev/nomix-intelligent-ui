@@ -4,13 +4,31 @@
   "type": "module",
   "license": "MIT",
   "description": "React adapter for the Nomix generative UI catalog.",
-  "repository": { "type": "git", "url": "git+https://github.com/ditgaldev/nomix-intelligent-ui.git", "directory": "packages/react" },
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ditgaldev/nomix-intelligent-ui.git",
+    "directory": "packages/react"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./display": {
+      "types": "./dist/display.d.ts",
+      "import": "./dist/display.js"
+    }
+  },
   "types": "./dist/index.d.ts",
-  "files": ["dist", "LICENSE", "LICENSE-APACHE-2.0", "THIRD_PARTY_NOTICES.md"],
+  "files": [
+    "dist",
+    "LICENSE",
+    "LICENSE-APACHE-2.0",
+    "THIRD_PARTY_NOTICES.md"
+  ],
   "sideEffects": false,
   "scripts": {
-    "build": "tsup src/index.tsx --format esm --dts --clean --external react --external react-dom",
+    "build": "tsup src/index.tsx src/display.tsx --format esm --dts --clean --external react --external react-dom",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -18,8 +36,15 @@
     "@json-render/react": "0.21.1",
     "@json-render/shadcn": "0.21.1",
     "@nomix/intelligent-ui-core": "0.1.0",
+    "chart.js": "4.5.1",
     "radix-ui": "1.8.1"
   },
-  "peerDependencies": { "react": "^19.2.3", "react-dom": "^19.2.3" },
-  "devDependencies": { "react": "19.2.3", "react-dom": "19.2.3" }
+  "peerDependencies": {
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
+  },
+  "devDependencies": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  }
 }
